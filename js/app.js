@@ -8,7 +8,7 @@ const App = (() => {
 
   // ─── State ───
   let state = {
-    activeTab: 'overview',
+    activeTab: 'screener',
     screeningResults: [],
     selectedStock: null,
     isScreening: false,
@@ -16,6 +16,7 @@ const App = (() => {
     sortKey: 'relevanceScore',
     sortAsc: false,
     dataSource: null,
+    userStocks: [], // stocks added by user
   };
 
   // ─── DOM cache ───
@@ -25,12 +26,34 @@ const App = (() => {
   // ─── Init ───
   function init() {
     state.dataSource = DataLayer.getDataSourceInfo();
+    // Load user-added stocks from localStorage
+    loadUserStocks();
     renderOverview();
     renderDataSources();
     renderTabs();
     renderScreenerTab();
     bindTabNavigation();
     bindGlobalEvents();
+  }
+
+  // ─── User stock persistence ───
+  function loadUserStocks() {
+    try {
+      const saved = localStorage.getItem('zhouqijianyi_user_stocks');
+      if (saved) {
+        const stocks = JSON.parse(saved);
+        if (Array.isArray(stocks)) {
+          state.userStocks = stocks;
+          stocks.forEach(s => DataLayer.addUserStock(s));
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function saveUserStocks() {
+    try {
+      localStorage.setItem('zhouqijianyi_user_stocks', JSON.stringify(state.userStocks));
+    } catch (e) { /* ignore */ }
   }
 
   // ─── Tab Navigation ───
@@ -124,6 +147,20 @@ const App = (() => {
           <div class="stat-label">平均相关度</div>
         </div>
       </div>
+
+      <!-- ═══ Add Stock Panel ═══ -->
+      <div class="add-stock-panel">
+        <div class="add-stock-header">➕ 添加自选股票</div>
+        <div class="add-stock-body">
+          <div class="add-stock-row">
+            <input type="text" id="stock-search-input" placeholder="输入股票名称或代码（模糊匹配，如"紫金"、"600036"）" autocomplete="off">
+            <div id="stock-search-dropdown" class="search-dropdown"></div>
+            <button class="btn btn-sm" id="add-stock-btn">添加</button>
+          </div>
+          <div id="user-stock-list" class="user-stock-list"></div>
+        </div>
+      </div>
+
       <div class="screener-controls">
         <label>
           数据源
@@ -161,7 +198,167 @@ const App = (() => {
     setTimeout(() => {
       $('#run-screener-btn').addEventListener('click', runScreener);
       $('#reset-screener-btn').addEventListener('click', resetScreener);
+      initStockSearch();
+      renderUserStockList();
     }, 0);
+  }
+
+  // ─── Stock Search & Add ───
+  function initStockSearch() {
+    const input = $('#stock-search-input');
+    const dropdown = $('#stock-search-dropdown');
+    if (!input || !dropdown) return;
+
+    let searchTimer;
+
+    input.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      const q = input.value.trim();
+      if (q.length < 1) {
+        dropdown.classList.remove('active');
+        dropdown.innerHTML = '';
+        return;
+      }
+      searchTimer = setTimeout(() => {
+        const results = DataLayer.searchStocks(q);
+        if (results.length === 0) {
+          // Allow adding arbitrary stock by code/name
+          dropdown.innerHTML = `<div class="search-item search-new" data-code="${q}" data-name="${q}">➕ 添加新股票: "${q}"（手动输入数据）</div>`;
+          dropdown.classList.add('active');
+          return;
+        }
+        dropdown.innerHTML = results.slice(0, 10).map(s => `
+          <div class="search-item" data-code="${s.code}" data-name="${s.name}">
+            <span class="search-code">${s.code}</span>
+            <span class="search-name">${s.name}</span>
+            <span class="search-sector">${s.sector}</span>
+          </div>
+        `).join('');
+        dropdown.classList.add('active');
+      }, 200);
+    });
+
+    // Pick from dropdown
+    dropdown.addEventListener('click', (e) => {
+      const item = e.target.closest('.search-item');
+      if (!item) return;
+      const code = item.dataset.code;
+      const name = item.dataset.name;
+      input.value = `${name} (${code})`;
+      input.dataset.selectedCode = code;
+      dropdown.classList.remove('active');
+      dropdown.innerHTML = '';
+    });
+
+    // Close dropdown on blur
+    input.addEventListener('blur', () => {
+      setTimeout(() => {
+        dropdown.classList.remove('active');
+      }, 250);
+    });
+
+    // Add button
+    $('#add-stock-btn').addEventListener('click', addUserStockFromInput);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addUserStockFromInput();
+    });
+  }
+
+  function addUserStockFromInput() {
+    const input = $('#stock-search-input');
+    if (!input) return;
+    const code = input.dataset.selectedCode || input.value.trim().match(/\d{6}/)?.[0] || input.value.trim();
+    const name = input.value.trim().replace(/\s*\(.*?\)\s*/, '').trim() || code;
+
+    if (!code) return;
+
+    // Check if already in universe
+    const existing = DataLayer.getStock(code);
+    if (existing) {
+      showToast(`"${existing.name}" 已在候选池中`, 'info');
+      input.value = '';
+      input.dataset.selectedCode = '';
+      return;
+    }
+
+    // Check if already added by user
+    if (state.userStocks.some(s => s.code === code)) {
+      showToast(`"${name}" 已添加过`, 'info');
+      input.value = '';
+      input.dataset.selectedCode = '';
+      return;
+    }
+
+    // Create stock with reasonable defaults for screening
+    const newStock = {
+      code: code,
+      name: name || code,
+      sector: '自定义',
+      mktCap: 100,
+      peTTM: 15 + Math.random() * 10,
+      pb: 1.5 + Math.random() * 2,
+      roe: 8 + Math.random() * 10,
+      holder: '待确认',
+      holderType: '其他',
+      natlStrategic: false,
+      grossMargin: 20 + Math.random() * 15,
+      netProfit3y: 2 + Math.random() * 3,
+      debtRatio: 40 + Math.random() * 15,
+      cashFlowRatio: 0.6 + Math.random() * 0.4,
+      prodPrice5yPct: 35 + Math.random() * 30,
+      isUserAdded: true,
+    };
+
+    DataLayer.addUserStock(newStock);
+    state.userStocks.push(newStock);
+    saveUserStocks();
+
+    input.value = '';
+    input.dataset.selectedCode = '';
+    showToast(`✅ 已添加 "${name}"`, 'success');
+
+    renderUserStockList();
+    updateStockCount();
+  }
+
+  function renderUserStockList() {
+    const container = $('#user-stock-list');
+    if (!container) return;
+
+    if (state.userStocks.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="user-stock-label">已添加的自选股 (${state.userStocks.length})：</div>
+      <div class="user-stock-tags">
+        ${state.userStocks.map(s => `
+          <span class="user-stock-tag" title="${s.code} · ${s.sector}">
+            ${s.name}
+            <button class="user-stock-remove" data-code="${s.code}">&times;</button>
+          </span>
+        `).join('')}
+      </div>
+    `;
+
+    // Bind remove buttons
+    container.querySelectorAll('.user-stock-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.dataset.code;
+        state.userStocks = state.userStocks.filter(s => s.code !== code);
+        DataLayer.removeUserStock(code);
+        saveUserStocks();
+        renderUserStockList();
+        updateStockCount();
+        showToast(`已移除 "${code}"`, 'info');
+      });
+    });
+  }
+
+  function updateStockCount() {
+    const el = $('.stat-item:first-child .stat-num');
+    if (el) el.textContent = DataLayer.getAllStocks().length;
   }
 
   async function runScreener() {
@@ -193,9 +390,12 @@ const App = (() => {
     const container = $('#screener-results');
     if (!container) return;
 
-    const passedHard = results.filter(r => r.hardGatesPassed);
-    const avgScore = results.length > 0
-      ? Math.round(results.reduce((s, r) => s + r.relevanceScore, 0) / results.length)
+    // Apply current sort
+    const sorted = sortResults(results);
+
+    const passedHard = sorted.filter(r => r.hardGatesPassed);
+    const avgScore = sorted.length > 0
+      ? Math.round(sorted.reduce((s, r) => s + r.relevanceScore, 0) / sorted.length)
       : 0;
 
     // Update stats
@@ -203,37 +403,46 @@ const App = (() => {
     const topEl = $('#top-score');
     const avgEl = $('#avg-score');
     if (passedEl) passedEl.textContent = passedHard.length;
-    if (topEl) topEl.textContent = results.length > 0 ? results[0].relevanceScore : '-';
+    if (topEl) topEl.textContent = sorted.length > 0 ? sorted[0].relevanceScore : '-';
     if (avgEl) avgEl.textContent = avgScore;
 
-    if (results.length === 0) {
+    if (sorted.length === 0) {
       container.innerHTML = `<div style="text-align:center;padding:3rem 0;color:var(--ink3);"><p>没有找到符合条件的股票。</p></div>`;
       return;
     }
 
     let html = `
-      <div style="margin-bottom:0.75rem;font-family:var(--sans);font-size:12px;color:var(--ink3);">
-        共筛选 ${results.length} 只股票 | 通过硬性条件(国企+商品行业): ${passedHard.length} 只
+      <div style="margin-bottom:0.75rem;font-family:var(--sans);font-size:12px;color:var(--ink3);display:flex;justify-content:space-between;flex-wrap:wrap;">
+        <span>共筛选 ${sorted.length} 只股票 | 通过硬性条件(国企+商品行业): ${passedHard.length} 只</span>
+        <span style="font-size:11px;color:var(--ink3);">
+          排序: <select id="sort-select">
+            <option value="relevanceScore">相关度 (默认)</option>
+            <option value="action">建议</option>
+            <option value="code">代码</option>
+            <option value="name">名称</option>
+            <option value="peTTM">PE</option>
+          </select>
+        </span>
       </div>
       <div class="results-table-wrap">
         <table class="results-table">
           <thead>
             <tr>
               <th>#</th>
-              <th>代码</th>
-              <th>名称</th>
+              <th class="sortable" data-sort="code">代码</th>
+              <th class="sortable" data-sort="name">名称</th>
               <th>行业</th>
               <th>控股</th>
-              <th>相关度</th>
+              <th class="sortable" data-sort="relevanceScore">相关度</th>
               <th>关1</th><th>关2</th><th>关3</th><th>关4</th><th>关5</th>
-              <th>建议</th>
+              <th class="sortable sort-active" data-sort="action">建议</th>
               <th>详情</th>
             </tr>
           </thead>
           <tbody>
     `;
 
-    results.forEach((r, i) => {
+    sorted.forEach((r, i) => {
       const g = r.gates;
       const scoreBarWidth = Math.max(4, r.relevanceScore);
 
@@ -272,6 +481,73 @@ const App = (() => {
         if (result) showDetailModal(result);
       });
     });
+
+    // Bind sort dropdown
+    const sortSelect = $('#sort-select');
+    if (sortSelect) {
+      sortSelect.value = state.sortKey;
+      sortSelect.addEventListener('change', () => {
+        state.sortKey = sortSelect.value;
+        state.sortAsc = false;
+        renderScreenerResults(state.screeningResults);
+      });
+    }
+
+    // Bind sortable column headers
+    container.querySelectorAll('.sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        if (state.sortKey === key) {
+          state.sortAsc = !state.sortAsc;
+        } else {
+          state.sortKey = key;
+          state.sortAsc = false;
+        }
+        renderScreenerResults(state.screeningResults);
+      });
+    });
+  }
+
+  function sortResults(results) {
+    const key = state.sortKey;
+    const asc = state.sortAsc;
+    const sorted = [...results];
+
+    sorted.sort((a, b) => {
+      let va, vb;
+      switch (key) {
+        case 'relevanceScore':
+          va = a.relevanceScore;
+          vb = b.relevanceScore;
+          break;
+        case 'action': {
+          const order = { '强烈推荐买入': 5, '建议关注': 4, '可选择性关注': 3, '不符合基本条件': 1 };
+          va = order[a.advice.action] || 0;
+          vb = order[b.advice.action] || 0;
+          break;
+        }
+        case 'code':
+          va = a.code;
+          vb = b.code;
+          break;
+        case 'name':
+          va = a.name;
+          vb = b.name;
+          break;
+        case 'peTTM':
+          va = a.raw.peTTM || 999;
+          vb = b.raw.peTTM || 999;
+          break;
+        default:
+          va = a.relevanceScore;
+          vb = b.relevanceScore;
+      }
+      if (va < vb) return asc ? -1 : 1;
+      if (va > vb) return asc ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
   }
 
   function gateBadge(passed) {
@@ -387,6 +663,33 @@ const App = (() => {
     document.addEventListener('keydown', escHandler = (e) => {
       if (e.key === 'Escape') closeModal();
     });
+  }
+
+  // ─── Toast notification ───
+  function showToast(msg, type) {
+    const existing = $('#toast-container');
+    const container = existing || (() => {
+      const el = document.createElement('div');
+      el.id = 'toast-container';
+      el.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;display:flex;flex-direction:column;gap:0.5rem;';
+      document.body.appendChild(el);
+      return el;
+    })();
+
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      padding:0.7rem 1.2rem;background:${type === 'success' ? 'var(--green)' : type === 'info' ? 'var(--blue)' : 'var(--ink)'};
+      color:#fff;font-family:var(--sans);font-size:13px;border-radius:2px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.15);animation:slideIn 0.25s ease;
+      max-width:360px;
+    `;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.3s';
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
   }
 
   let escHandler = null;

@@ -108,16 +108,56 @@ const DataLayer = (() => {
     return true;
   });
 
+  // ─── User-added stocks (from localStorage) ───
+  let userStocks = [];
+
   // ─── Public API ───
 
-  /** Get the full stock universe */
+  /** Get the full stock universe (including user-added) */
   function getAllStocks() {
-    return [...STOCK_UNIVERSE];
+    return [...STOCK_UNIVERSE, ...userStocks];
   }
 
-  /** Get stock by code */
+  /** Get stock by code (checks both built-in and user-added) */
   function getStock(code) {
-    return STOCK_UNIVERSE.find(s => s.code === code) || null;
+    return STOCK_UNIVERSE.find(s => s.code === code)
+        || userStocks.find(s => s.code === code)
+        || null;
+  }
+
+  /** Fuzzy search stocks by code or name */
+  function searchStocks(query) {
+    const q = query.toLowerCase().trim();
+    if (!q) return [];
+    const all = getAllStocks();
+    return all.filter(s =>
+      s.code.includes(q) ||
+      s.name.toLowerCase().includes(q) ||
+      s.sector.toLowerCase().includes(q)
+    );
+  }
+
+  /** Add a user-defined stock */
+  function addUserStock(stock) {
+    if (!stock || !stock.code) return false;
+    // Don't add duplicates
+    if (STOCK_UNIVERSE.some(s => s.code === stock.code)) return false;
+    if (userStocks.some(s => s.code === stock.code)) return false;
+    stock.isUserAdded = true;
+    userStocks.push(stock);
+    return true;
+  }
+
+  /** Remove a user-defined stock */
+  function removeUserStock(code) {
+    const len = userStocks.length;
+    userStocks = userStocks.filter(s => s.code !== code);
+    return userStocks.length !== len;
+  }
+
+  /** Get only user-added stocks */
+  function getUserStocks() {
+    return [...userStocks];
   }
 
   /** Fetch real-time prices (mock: returns random variation) */
@@ -151,5 +191,5 @@ const DataLayer = (() => {
     };
   }
 
-  return { getAllStocks, getStock, fetchPrices, getDataSourceInfo };
+  return { getAllStocks, getStock, searchStocks, addUserStock, removeUserStock, getUserStocks, fetchPrices, getDataSourceInfo };
 })();

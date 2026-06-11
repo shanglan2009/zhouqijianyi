@@ -44,8 +44,9 @@ const Methodology = (() => {
     { name: 'Perplexity / Claude Search', type: 'AI搜索', icon: 'search', use: '快速交叉验证、新闻整合', access: '在线工具' },
   ];
 
-  // ─── Tabs Definition ───
+  // ─── Tabs Definition (screener first = homepage) ───
   const TABS = [
+    { id: 'screener', label: '自动筛选', highlight: true },
     { id: 'overview', label: '总览' },
     { id: 'gate1',    label: '关1 企业性质' },
     { id: 'gate2',    label: '关2 行业筛选' },
@@ -55,7 +56,6 @@ const Methodology = (() => {
     { id: 'verify',   label: '多渠道验证' },
     { id: 'monitor',  label: '持仓监控' },
     { id: 'exit',     label: '卖出决策' },
-    { id: 'screener', label: '自动筛选', highlight: true },
   ];
 
   return { CORE_PARAMS, WORKFLOW, DATA_SOURCES, TABS };
