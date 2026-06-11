@@ -187,7 +187,7 @@ const App = (() => {
       </div>
       <div id="screener-results">
         <div style="text-align:center;padding:3rem 0;color:var(--ink3);font-family:var(--sans);font-size:13px;">
-          点击「运行自动筛选」查看结果
+          点击「运行自动筛选」查看结果。也可以在输入框中搜索或输入股票代码/名称后点击「添加」。
         </div>
       </div>
     `;
@@ -205,7 +205,10 @@ const App = (() => {
   function initStockSearch() {
     const input = $('#stock-search-input');
     const dropdown = $('#stock-search-dropdown');
-    if (!input || !dropdown) return;
+    if (!input || !dropdown) {
+      console.warn('initStockSearch: input or dropdown not found');
+      return;
+    }
 
     let searchTimer;
 
@@ -221,7 +224,7 @@ const App = (() => {
         const results = DataLayer.searchStocks(q);
         if (results.length === 0) {
           // Allow adding arbitrary stock by code/name
-          dropdown.innerHTML = `<div class="search-item search-new" data-code="${q}" data-name="${q}">➕ 添加新股票: "${q}"（手动输入数据）</div>`;
+          dropdown.innerHTML = `<div class="search-item search-new" data-code="${q}" data-name="${q}">➕ 添加: "${q}"</div>`;
           dropdown.classList.add('active');
           return;
         }
@@ -242,10 +245,13 @@ const App = (() => {
       if (!item) return;
       const code = item.dataset.code;
       const name = item.dataset.name;
-      input.value = `${name} (${code})`;
+      input.value = name + ' (' + code + ')';
       input.dataset.selectedCode = code;
+      input.dataset.selectedName = name;
       dropdown.classList.remove('active');
       dropdown.innerHTML = '';
+      // Auto-add when picking from dropdown
+      addUserStockFromInput();
     });
 
     // Close dropdown on blur
@@ -255,70 +261,120 @@ const App = (() => {
       }, 250);
     });
 
-    // Add button
-    $('#add-stock-btn').addEventListener('click', addUserStockFromInput);
+    // Add button — use the panel as delegate to survive re-renders
+    const panel = document.getElementById('tab-screener');
+    if (panel) {
+      panel.addEventListener('click', (e) => {
+        if (e.target.id === 'add-stock-btn') {
+          e.preventDefault();
+          addUserStockFromInput();
+        }
+      });
+    }
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') addUserStockFromInput();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addUserStockFromInput();
+      }
     });
   }
 
   function addUserStockFromInput() {
-    const input = $('#stock-search-input');
-    if (!input) return;
-    const code = input.dataset.selectedCode || input.value.trim().match(/\d{6}/)?.[0] || input.value.trim();
-    const name = input.value.trim().replace(/\s*\(.*?\)\s*/, '').trim() || code;
+    try {
+      const input = $('#stock-search-input');
+      if (!input) {
+        showToast('输入框未找到', 'error');
+        return;
+      }
 
-    if (!code) return;
+      // 1) Use selectedCode if set (from dropdown click)
+      let code = input.dataset.selectedCode;
+      const rawValue = input.value.trim();
+      let name = input.dataset.selectedName || rawValue.replace(/\s*\(.*?\)\s*/g, '').trim();
 
-    // Check if already in universe
-    const existing = DataLayer.getStock(code);
-    if (existing) {
-      showToast(`"${existing.name}" 已在候选池中`, 'info');
+      // 2) If no code from dropdown, try to extract from input
+      if (!code) {
+        // Try 6-digit code match
+        const match6 = rawValue.match(/(\d{6})/);
+        if (match6) {
+          code = match6[1];
+          if (!name || name === code) name = rawValue;
+        } else {
+          // Try to find by name in the universe
+          const all = DataLayer.getAllStocks();
+          const found = all.find(s => s.name === rawValue || s.code === rawValue);
+          if (found) {
+            showToast('"' + found.name + '" 已在候选池中', 'info');
+            input.value = '';
+            delete input.dataset.selectedCode;
+            delete input.dataset.selectedName;
+            return;
+          }
+          code = rawValue;
+          name = rawValue;
+        }
+      }
+
+      if (!code) {
+        showToast('请输入股票代码或名称', 'info');
+        return;
+      }
+
+      // 3) Check duplicates in built-in universe
+      const existing = DataLayer.getStock(code);
+      if (existing) {
+        showToast('"' + existing.name + '" 已在候选池中', 'info');
+        input.value = '';
+        delete input.dataset.selectedCode;
+        delete input.dataset.selectedName;
+        return;
+      }
+
+      // 4) Check duplicates in user-added list
+      if (state.userStocks.some(s => s.code === code)) {
+        showToast('"' + name + '" 已添加过', 'info');
+        input.value = '';
+        delete input.dataset.selectedCode;
+        delete input.dataset.selectedName;
+        return;
+      }
+
+      // 5) Create stock with random demo data
+      const newStock = {
+        code: code,
+        name: name || code,
+        sector: '自定义',
+        mktCap: 50 + Math.random() * 200,
+        peTTM: 10 + Math.random() * 20,
+        pb: 1 + Math.random() * 3,
+        roe: 5 + Math.random() * 15,
+        holder: '待确认',
+        holderType: '其他',
+        natlStrategic: false,
+        grossMargin: 15 + Math.random() * 25,
+        netProfit3y: 1 + Math.random() * 4,
+        debtRatio: 35 + Math.random() * 25,
+        cashFlowRatio: 0.5 + Math.random() * 0.5,
+        prodPrice5yPct: 30 + Math.random() * 40,
+        isUserAdded: true,
+      };
+
+      DataLayer.addUserStock(newStock);
+      state.userStocks.push(newStock);
+      saveUserStocks();
+
       input.value = '';
-      input.dataset.selectedCode = '';
-      return;
+      delete input.dataset.selectedCode;
+      delete input.dataset.selectedName;
+      showToast('✅ 已添加 "' + (name || code) + '"', 'success');
+
+      renderUserStockList();
+      updateStockCount();
+      runScreener();
+    } catch (e) {
+      console.error('addUserStockFromInput error:', e);
+      showToast('添加失败: ' + e.message, 'error');
     }
-
-    // Check if already added by user
-    if (state.userStocks.some(s => s.code === code)) {
-      showToast(`"${name}" 已添加过`, 'info');
-      input.value = '';
-      input.dataset.selectedCode = '';
-      return;
-    }
-
-    // Create stock with reasonable defaults for screening
-    const newStock = {
-      code: code,
-      name: name || code,
-      sector: '自定义',
-      mktCap: 100,
-      peTTM: 15 + Math.random() * 10,
-      pb: 1.5 + Math.random() * 2,
-      roe: 8 + Math.random() * 10,
-      holder: '待确认',
-      holderType: '其他',
-      natlStrategic: false,
-      grossMargin: 20 + Math.random() * 15,
-      netProfit3y: 2 + Math.random() * 3,
-      debtRatio: 40 + Math.random() * 15,
-      cashFlowRatio: 0.6 + Math.random() * 0.4,
-      prodPrice5yPct: 35 + Math.random() * 30,
-      isUserAdded: true,
-    };
-
-    DataLayer.addUserStock(newStock);
-    state.userStocks.push(newStock);
-    saveUserStocks();
-
-    input.value = '';
-    input.dataset.selectedCode = '';
-    showToast(`✅ 已添加 "${name}"`, 'success');
-
-    renderUserStockList();
-    updateStockCount();
-    // Auto-run screener to immediately show the new stock in results
-    runScreener();
   }
 
   function renderUserStockList() {
@@ -667,29 +723,28 @@ const App = (() => {
 
   // ─── Toast notification ───
   function showToast(msg, type) {
-    const existing = $('#toast-container');
-    const container = existing || (() => {
-      const el = document.createElement('div');
-      el.id = 'toast-container';
-      el.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:999;display:flex;flex-direction:column;gap:0.5rem;';
-      document.body.appendChild(el);
-      return el;
-    })();
+    try {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:99999;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none;';
+        document.body.appendChild(container);
+      }
 
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-      padding:0.7rem 1.2rem;background:${type === 'success' ? 'var(--green)' : type === 'info' ? 'var(--blue)' : 'var(--ink)'};
-      color:#fff;font-family:var(--sans);font-size:13px;border-radius:2px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.15);animation:slideIn 0.25s ease;
-      max-width:360px;
-    `;
-    toast.textContent = msg;
-    container.appendChild(toast);
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transition = 'opacity 0.3s';
-      setTimeout(() => toast.remove(), 300);
-    }, 2500);
+      const bgColor = type === 'success' ? '#1a5c2a' : type === 'info' ? '#1a3a6b' : type === 'error' ? '#8b1a1a' : '#1a1a18';
+      const toast = document.createElement('div');
+      toast.style.cssText = 'padding:0.7rem 1.2rem;background:' + bgColor + ';color:#fff;font-family:Helvetica Neue,Arial,sans-serif;font-size:13px;border-radius:2px;box-shadow:0 2px 10px rgba(0,0,0,0.25);max-width:360px;line-height:1.5;';
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(function() {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(function() { if (toast.parentNode) toast.remove(); }, 300);
+      }, 3000);
+    } catch(e) {
+      console.error('showToast error:', e);
+    }
   }
 
   let escHandler = null;
