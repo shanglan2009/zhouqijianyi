@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寒武纪方法论 · AI选股提示词系统 · 周期建议</title>
+<meta name="description" content="基于寒武纪方法论的A股资源类国企自动筛选系统 — 五级漏斗 · 多渠道验证 · 周期判断 · 可量化操作">
+<meta name="theme-color" content="#f8f6f1">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ═══════ HEADER ═══════ -->
+<header class="site-header">
+  <div class="header-inner">
+    <p class="header-eyebrow">寒武纪的鳄鱼 · 价值投资体系</p>
+    <h1 class="site-title">周期建议 · AI 选股系统</h1>
+    <p class="header-sub">五级漏斗 · 多渠道验证 · 周期判断 · 可量化操作</p>
+  </div>
+  <nav class="tab-nav">
+    <!-- Populated by JS -->
+  </nav>
+</header>
+
+<!-- ══════════════════════════════════════════════════════ TAB: 总览 ═══════ -->
+<div id="tab-overview" class="tab-panel active">
+<div class="container">
+
+  <div style="margin-bottom:2rem;padding:1.5rem 0;border-bottom:1px solid var(--border);">
+    <p style="font-size:14px;color:var(--ink2);line-height:1.9;font-family:var(--sans);">
+      本系统将<strong>寒武纪方法论</strong>转化为可自动执行的选股逻辑，覆盖从初步筛选到退出决策的完整链路。
+      核心策略：<strong>只买商品类国企</strong>，在行业周期底部、全产业链亏损时买入，持有至行业狂热时卖出。
+      所有筛选条件均有量化标准和交叉验证逻辑。
+    </p>
+  </div>
+
+  <div class="section-label">量化核心参数</div>
+  <div class="overview-grid"><!-- Populated by JS --></div>
+
+  <div class="section-label">选股五级漏斗 · 操作流程</div>
+  <div class="workflow"><!-- Populated by JS --></div>
+
+  <div class="section-label">数据源总览</div>
+  <table class="source-table">
+    <thead>
+      <tr>
+        <th>数据源</th><th>类型</th><th>适用场景</th><th>访问方式</th>
+      </tr>
+    </thead>
+    <tbody><!-- Populated by JS --></tbody>
+  </table>
+
+  <div class="note-box">💡 使用建议：每个提示词在AI工具中使用时，建议附上具体的公司名称或行业名称替换占位符，并要求AI在回答中注明每项数据的来源网址，便于人工二次核实。</div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: 关1 ═══════ -->
+<div id="tab-gate1" class="tab-panel">
+<div class="container">
+
+  <div class="section-label">第一关 · 企业性质过滤</div>
+  <div class="note-box">本关是最快速的淘汰关，耗时5分钟即可完成。核心逻辑：民营企业造假风险高，国企在行业低谷时享有国家干预保护，是中国资本市场独特的安全边际。</div>
+
+  <!-- 1-A -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · 1-A</div>
+        <div class="prompt-title">确认企业实际控制人</div>
+        <div class="prompt-desc">查询股权穿透结构，精确判断最终控制方是否为国有资本</div>
+        <div class="badge-row">
+          <span class="badge badge-search">股权查询</span>
+          <span class="badge badge-filter">硬性过滤</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 实际控制人穿透查询提示词</span>
+
+请查询 <span class="key">[COMPANY NAME]（股票代码：[CODE]）</span> 的股权结构：
+
+<span class="key">1. 实际控制人认定</span>
+   - 穿透所有持股层级，找到最终实际控制人
+   - 明确是否属于以下类别之一：
+     <span class="ok">✓ 央企（国务院国资委直接管辖）</span>
+     <span class="ok">✓ 省级国资委控股企业</span>
+     <span class="ok">✓ 地市级国资委控股企业</span>
+     <span class="warn">✗ 民营自然人控股</span>
+     <span class="warn">✗ 外资控股</span>
+     <span class="warn">✗ 管理层持股超过国有持股</span>
+
+<span class="key">2. 持股比例</span>
+   - 国有股东直接持股比例
+   - 通过各层级间接持股比例
+   - 表决权是否与持股比例一致
+
+<span class="key">3. 数据来源要求</span>
+   请注明数据来源：
+   - 第一：最新年报/半年报股权结构章节
+   - 第二：CNINFO（cninfo.com.cn）公告原文
+   - 第三：天眼查/企查查工商数据
+
+<span class="key">4. 输出格式</span>
+   最终结论：[通过 / 排除]
+   控制人类型：[央企 / 省国资委 / 地市国资委 / 民企 / 其他]
+   国有持股合计：[X%]
+   数据截止日期：[YYYY-MM-DD]</div>
+      <div class="warn-box">⚠ 注意：部分企业通过"混合所有制"改革引入民营资本，需确认国有股东仍为第一大股东且持股比例超过民营股东。</div>
+    </div>
+  </div>
+
+  <!-- 1-B -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · 1-B</div>
+        <div class="prompt-title">国家战略地位评估</div>
+        <div class="prompt-desc">判断该企业是否属于国家"不会放弃"的核心战略资产</div>
+        <div class="badge-row">
+          <span class="badge badge-analysis">战略分析</span>
+          <span class="badge badge-verify">政策验证</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 国家战略资产评估提示词</span>
+
+请评估 <span class="key">[COMPANY NAME]</span> 的国家战略地位：
+
+<span class="key">1. 政策文件核查</span>
+   - 是否出现在以下名单之一：
+     · 国务院"关系国民经济命脉"央企名单
+     · 工信部战略性矿产资源（24种）相关企业
+     · 国家能源局重点企业
+     · 发改委产业政策支持目录
+
+<span class="key">2. 历史干预记录</span>
+   - 过去10年内国家是否在该行业低谷期：
+     · 出台价格保护政策 · 下达减产/限产行政指令
+     · 给予财政补贴或税收优惠 · 国家储备局收储
+
+<span class="key">3. 战略稀缺性判断</span>
+   - 该公司控制的资源/产品是否属于：
+     · 中国战略矿产（稀土、锂、钴、钨、锑等）
+     · 国防军工必需品 · 无法进口替代的国内独占资源
+
+<span class="key">输出结论：</span>
+战略地位评级：[核心战略 / 重要战略 / 一般战略 / 非战略]
+历史干预次数：[N次]</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: 关2 ═══════ -->
+<div id="tab-gate2" class="tab-panel">
+<div class="container">
+
+  <div class="section-label">第二关 · 行业与能力圈过滤</div>
+  <div class="note-box">只在商品类资源行业内操作。判断依据：1）产品是否物理存在、有全球定价、供需可追踪；2）业务逻辑是否简单到一句话能讲清楚。</div>
+
+  <!-- 2-A -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · 2-A</div>
+        <div class="prompt-title">商品类行业资格验证</div>
+        <div class="prompt-desc">确认企业是否属于有全球定价、供需可量化的商品类资产</div>
+        <div class="badge-row">
+          <span class="badge badge-filter">行业过滤</span>
+          <span class="badge badge-verify">全球验证</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 商品类行业资格验证提示词</span>
+
+请对 <span class="key">[COMPANY NAME]</span> 进行行业归类验证：
+
+<span class="key">1. 主营产品核查</span>
+   - 前三大主营产品/业务及收入占比
+   - 主营业务占总收入比例是否 &gt; 80%？
+   - 业务是否高度专注单一领域？
+
+<span class="key">2. 商品类资产判断标准</span>
+   全部满足以下条件：
+   <span class="ok">✓ 物理存在，可开采/生产/运输</span>
+   <span class="ok">✓ 有国际或国内公开市场价格</span>
+   <span class="ok">✓ 供需数据可从官方机构获取</span>
+   <span class="ok">✓ 业务模式一句话可以解释清楚</span>
+   <span class="warn">✗ 软件/平台/服务类（排除）</span>
+   <span class="warn">✗ 金融类（排除）</span>
+   <span class="warn">✗ 消费品品牌（排除）</span>
+   <span class="warn">✗ 需要技术专利护城河的科技类（排除）</span>
+
+<span class="key">3. 全球市场地位</span>
+   - 该公司在全球市场中的产量/储量排名
+   - 中国在全球该商品供应中的份额
+
+<span class="key">输出结论：</span>
+行业归类：[矿产/有色/能源/化工/农产品/其他]
+商品类资产：[是 / 否]</div>
+      <div class="ok-box">✓ 合格商品类资产：稀土、锂、钴、钨、锑、铀、铜、铝、黄金、铁矿石、焦煤、磷矿、钾肥</div>
+      <div class="warn-box">✗ 应排除类：半导体、AI算法、电商平台、消费电子、银行、券商、保险</div>
+    </div>
+  </div>
+
+  <!-- 2-B -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · 2-B</div>
+        <div class="prompt-title">行业竞争结构分析</div>
+        <div class="prompt-desc">验证"产品在国内独一无二或不可替代"这一核心条件</div>
+        <div class="badge-row">
+          <span class="badge badge-analysis">竞争分析</span>
+          <span class="badge badge-verify">多渠道验证</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 行业竞争结构分析提示词</span>
+
+请分析 <span class="key">[COMPANY NAME]</span> 的竞争护城河：
+
+<span class="key">1. 国内市场集中度</span>
+   - CR3（前三名市占率之和）
+   - 该公司国内市场份额排名
+   - 近5年市场份额变化趋势
+
+<span class="key">2. 资源端稀缺性验证</span>
+   - 控制的矿山/资源储量
+   - 已探明储量可开采年限
+   - 国内竞争对手是否可通过新建产能替代
+
+<span class="key">3. 行政壁垒核查</span>
+   - 是否有许可证/配额限制
+   - 国家是否明确限制新进入者
+
+<span class="key">4. 定价权评估</span>
+   - 公司是国内定价的参与者还是接受者
+   - 历史上提价是否遭到客户大规模流失
+
+<span class="key">输出结论：</span>
+不可替代性评级：[强 / 中 / 弱]</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: 关3 ═══════ -->
+<div id="tab-gate3" class="tab-panel">
+<div class="container">
+
+  <div class="section-label">第三关 · 基本面量化筛选</div>
+  <div class="note-box">核心逻辑：供需决定价格，价格必然兑现价值。这一关需要从财务报告和商品价格两个维度交叉验证业绩弹性。</div>
+
+  <!-- 3-A -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · 3-A</div>
+        <div class="prompt-title">三年业绩弹性量化分析</div>
+        <div class="prompt-desc">计算净利润增幅、毛利率趋势、现金流质量，判断是否达到爆发阈值</div>
+        <div class="badge-row">
+          <span class="badge badge-analysis">财务分析</span>
+          <span class="badge badge-output">量化输出</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 三年业绩弹性量化分析提示词</span>
+
+请提取 <span class="key">[COMPANY NAME]（[CODE]）</span> 过去5年的核心财务数据：
+
+<span class="key">1. 利润表核心指标（亿元）</span>
+   | 年份 | 营收 | 毛利 | 毛利率 | 净利润 | 净利率 | YoY增速 |
+   提取最近5个完整财务年度数据
+
+<span class="key">2. 业绩爆发阈值判断</span>
+   · 最近3年净利润最高点 ÷ 最低点 = [N]倍
+     <span class="ok">✓ 达标：≥5倍</span>  <span class="warn">✗ 不达标：&lt;5倍</span>
+   · 单年净利润最大增速 = [X%]
+     <span class="ok">✓ 达标：≥200%（即3倍）</span>
+   · 主要产品价格最高点 ÷ 最低点 = [N]倍
+     <span class="ok">✓ 达标：≥2倍</span>
+
+<span class="key">3. 盈利质量核查</span>
+   · 最近3年是否有亏损？<span class="warn">有→触发排除</span>
+   · 经营性现金流/净利润比值
+     <span class="ok">✓ 健康：&gt;0.8</span>  <span class="warn">✗ &lt;0.5警惕</span>
+   · 毛利率趋势：[上升/持平/下降]
+     <span class="warn">✗ 连续下降→触发排除</span>
+
+<span class="key">4. 资产负债健康度</span>
+   · 资产负债率：[X%]（商品类健康线 &lt;65%）
+   · 有息负债/EBITDA：[N倍]（&lt;3倍健康）
+
+<span class="key">输出格式：</span>
+代码 | 公司 | 弹性 | 最大增速 | 毛利率趋势 | 现金流 | 总评</div>
+    </div>
+  </div>
+
+  <!-- 3-B -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · 3-B</div>
+        <div class="prompt-title">商品价格与业绩相关性验证</div>
+        <div class="prompt-desc">建立产品价格→净利润的传导模型，验证价格敏感度</div>
+        <div class="badge-row">
+          <span class="badge badge-analysis">量化建模</span>
+          <span class="badge badge-verify">价格验证</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 商品价格与业绩相关性验证提示词</span>
+
+请构建 <span class="key">[COMPANY NAME]</span> 的价格-利润敏感性模型：
+
+<span class="key">1. 主要产品价格追踪</span>
+   从以下来源获取近5年月度价格数据：
+   - 国内：上海有色金属网 / 安泰科 / 百川盈孚
+   - 国际：LME / Kitco / Fastmarkets
+   - 期货：上期所 / 大商所 / 郑商所
+
+<span class="key">2. 价格-利润相关性</span>
+   · 年度均价与净利润对应排列
+   · 相关系数（目标：&gt;0.8 为强相关）
+   · "产品价格每上涨10%，净利润约增加X%"
+
+<span class="key">3. 当前价格位置判断</span>
+   · 当前价格处于近5年分位数：[X%分位]
+     <span class="ok">✓ 买入参考：低于40%分位</span>
+     <span class="warn">⚠ 谨慎：40%-70%分位</span>
+     <span class="warn">✗ 危险：高于70%分位</span>
+
+<span class="key">4. 成本结构分析</span>
+   · 现金成本：[X元/吨]
+   · 当前盈利空间：[(当前价-成本)/成本 = X%]
+
+<span class="key">输出结论：</span>
+价格-利润相关系数：[0.XX]
+当前价格分位：[X%分位]
+敏感性：价格+10% → 净利润+[X%]</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: 关4 ═══════ -->
+<div id="tab-gate4" class="tab-panel">
+<div class="container">
+
+  <div class="section-label">第四关 · 周期位置判断</div>
+  <div class="note-box">最难的一关，也是最重要的一关。核心信号：全产业链亏损 + 从业者离场 + 股价横盘 + 市场冷清。四个条件越多同时满足，底部越接近。</div>
+
+  <!-- 4-A -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · 4-A</div>
+        <div class="prompt-title">全产业链亏损扫描</div>
+        <div class="prompt-desc">"当一个行业从上游到下游整个产业链全部亏损，就是即将反转的极点附近"</div>
+        <div class="badge-row">
+          <span class="badge badge-cycle">底部信号</span>
+          <span class="badge badge-verify">多源验证</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 全产业链亏损扫描提示词</span>
+
+请对 <span class="key">[INDUSTRY]</span> 进行全链亏损扫描：
+
+<span class="key">1. 产业链分层</span>
+   · 上游：[资源/开采环节] → 代表企业3-5家
+   · 中游：[冶炼/加工环节] → 代表企业3-5家
+   · 下游：[应用/消费环节] → 代表企业3-5家
+
+<span class="key">2. 各环节盈利状态</span>
+   | 环节 | 代表企业 | 净利润 | 毛利率 | 盈亏状态 |
+
+<span class="key">3. 行业平均盈利水平</span>
+   · 行业平均ROE：[X%]（历史均值：[X%]）
+   · 亏损企业占比：[X%]
+
+<span class="key">4. 底部信号强度评估</span>
+   · 亏损环节数：[N/3]
+   · 上游是否亏损：[是/否]（最强底部信号）
+   · 行业亏损持续时间：[N季度]
+
+<span class="key">5. 从业者离场信号</span>
+   搜索近12个月：
+   · 资深从业者/高管离职新闻
+   · 中小矿山/工厂停产关闭报道
+
+<span class="key">底部信号评分（0-10分）：</span>
+全产业链亏损：[0-3] 上游亏损：[0-2]
+从业者离场：[0-2] 媒体冷清：[0-1]
+亏损&gt;2年：[0-2] → <span class="ok">7分以上：底部极点附近</span></div>
+    </div>
+  </div>
+
+  <!-- 4-B -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · 4-B</div>
+        <div class="prompt-title">供需周期量化分析</div>
+        <div class="prompt-desc">从全球供应、需求、库存三维度判断周期位置</div>
+        <div class="badge-row">
+          <span class="badge badge-cycle">周期判断</span>
+          <span class="badge badge-analysis">量化分析</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 全球供需周期量化分析提示词</span>
+
+请对 <span class="key">[COMMODITY NAME]</span> 进行全球供需周期分析：
+
+<span class="key">1. 全球供给端</span>
+   · 全球年产量：[X万吨]，同比：[+/-X%]
+   · 产能利用率：[X%]（历史均值：[X%]）
+   · 在建/规划产能（未来3年）：[X万吨]
+
+<span class="key">2. 全球需求端</span>
+   · 全球年消费量：[X万吨]，同比：[+/-X%]
+   · 主要需求来源：[行业+占比]
+   · 新兴需求驱动因素
+
+<span class="key">3. 库存水位（核心指标）</span>
+   · LME库存近5年分位：[X%]
+     <span class="ok">✓ 底部：低于20%分位</span>
+     <span class="warn">✗ 顶部：高于80%分位</span>
+   · 库存趋势：[快速去库/缓慢去库/累库]
+
+<span class="key">4. 供需平衡表</span>
+   当前：供给[X]-消费[X]=过剩/缺口[X万吨]
+
+<span class="key">5. 历史周期对比</span>
+   完整周期长度：[N年]
+   上一次底部：[YYYY年]
+   预计下次底部/顶部：[YYYY年前后]
+
+<span class="key">周期位置：</span>
+[底部/底部区间/中段/顶部区间/顶部]</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: 关5 ═══════ -->
+<div id="tab-gate5" class="tab-panel">
+<div class="container">
+
+  <div class="section-label">第五关 · 估值与拐点确认</div>
+  <div class="note-box">最后一关是买入触发器。核心：PE≤15倍 + 四类拐点之一出现。注意底部时企业往往亏损，此时用正常化利润（历史高峰或未来预测）估值。</div>
+
+  <!-- 5-A -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · 5-A</div>
+        <div class="prompt-title">估值分析与安全边际计算</div>
+        <div class="prompt-desc">"净利润×30倍是合理中枢，15倍以下是大机会，60倍以上是大灾难"</div>
+        <div class="badge-row">
+          <span class="badge badge-analysis">估值计算</span>
+          <span class="badge badge-output">买入决策</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 估值与安全边际计算提示词</span>
+
+请对 <span class="key">[COMPANY NAME]（[CODE]）</span> 进行多维度估值分析：
+
+<span class="key">1. 当前估值水平</span>
+   · 最新收盘价：[X元]
+   · 总市值：[X亿元]
+   · PE（TTM）：[X倍]
+   · PB：[X倍] · EV/EBITDA：[X倍]
+
+<span class="key">2. 正常化利润估算（周期股底部用）</span>
+   · 历史利润高峰（10年）：[X亿元]（[YYYY年]）
+   · 以历史高峰利润计算PE：[X倍]
+     <span class="ok">✓ 大机会：&lt;5倍</span>
+     <span class="ok">✓ 买入：&lt;10倍</span>
+     <span class="warn">⚠ 谨慎：10-15倍</span>
+
+<span class="key">3. 目标价与上涨空间</span>
+   · 保守：历史均值×15倍PE = [X元]，+[X%]
+   · 基准：历史高峰×20倍PE = [X元]，+[X%]
+   · 乐观：超历史高峰×25倍PE = [X元]，+[X%]
+
+<span class="key">4. 安全边际核查</span>
+   · 距3年低点：[+X%]  · 距1年低点：[+X%]
+   · 机构持股变化：[增持/减持]
+   · 大股东近期是否增持：[是/否]
+
+<span class="key">输出买入决策：</span>
+当前PE（正常化）：[X倍]
+买入区间：[X元-X元]（PE 10-15倍）
+目标价：[X元]（PE 20倍）
+预期持有：[2-4年]
+预期回报：[X倍]</div>
+    </div>
+  </div>
+
+  <!-- 5-B -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · 5-B</div>
+        <div class="prompt-title">四类拐点识别</div>
+        <div class="prompt-desc">行业拐点、产品价格拐点、业绩拐点、周期拐点——确认至少一类</div>
+        <div class="badge-row">
+          <span class="badge badge-cycle">拐点识别</span>
+          <span class="badge badge-verify">信号确认</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 四类拐点识别提示词</span>
+
+请扫描 <span class="key">[COMPANY / INDUSTRY]</span> 的拐点信号：
+
+<span class="key">类型A：行业拐点</span>
+   · 政府限产/减产行政指令？
+   · 国家收储计划？
+   · 产业链并购整合？
+   · 行业协会自律限产？
+
+<span class="key">类型B：产品价格拐点</span>
+   · 现货连续2月站上成本线？
+   · 期货贴水转升水？
+   · 价格从低点反弹&gt;15%？
+   · 国际机构上调价格预测？
+
+<span class="key">类型C：业绩拐点</span>
+   · 季报净利润环比改善？
+   · 订单/产量回升？
+   · 管理层积极指引？
+   · 分析师上调盈利预测？
+
+<span class="key">类型D：周期拐点</span>
+   · 行业PMI触底回升？
+   · 从业企业数量停止减少？
+   · 国际商品先于国内见底？
+
+<span class="key">拐点结论：</span>
+行业拐点：[出现/未出现]
+价格拐点：[出现/未出现]
+业绩拐点：[出现/未出现]
+周期拐点：[出现/未出现]
+建议操作：[建仓/等待/观察]</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: 多渠道验证 ═══════ -->
+<div id="tab-verify" class="tab-panel">
+<div class="container">
+
+  <div class="section-label">多渠道交叉验证</div>
+  <div class="note-box">所有核心数据点都需要至少2个独立来源交叉验证。数据分歧时以官方机构为准。</div>
+
+  <!-- V-A -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · V-A</div>
+        <div class="prompt-title">USGS 全球矿产数据交叉验证</div>
+        <div class="prompt-desc">用美国地质调查局权威数据验证中国官方数据</div>
+        <div class="badge-row">
+          <span class="badge badge-verify">官方数据</span>
+          <span class="badge badge-search">全球视角</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># USGS数据交叉验证提示词</span>
+
+请从 <span class="val">USGS Mineral Commodity Summaries</span> 查询 <span class="key">[MINERAL]</span>：
+
+<span class="key">查询项目：</span>
+1. 全球储量：[X万吨]，中国占比：[X%]
+2. 全球产量：[X万吨]，中国：[X万吨]
+3. 主要生产国排名（前5）
+4. USGS对该商品供需前景评估
+
+<span class="key">与中国官方数据对比：</span>
+· 统计局中国产量：[X万吨]
+· USGS中国产量：[X万吨]
+· 差异比例：[X%]（&gt;15%需注明原因）
+
+<span class="key">战略意义：</span>
+· 美国是否列为"关键矿产"？
+· 中国是否主导全球供应（&gt;50%）？
+· 地缘政治风险？</div>
+      <div class="ok-box">✓ 验证链路：国家统计局 → USGS交叉验证 → 差异&lt;15%则数据可靠</div>
+    </div>
+  </div>
+
+  <!-- V-B -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · V-B</div>
+        <div class="prompt-title">国际商品价格多平台验证</div>
+        <div class="prompt-desc">同时查询LME、SHFE、现货市场，交叉验证价格一致性</div>
+        <div class="badge-row">
+          <span class="badge badge-verify">价格验证</span>
+          <span class="badge badge-search">实时数据</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 商品价格多平台交叉验证提示词</span>
+
+请从多个渠道查询 <span class="key">[COMMODITY]</span> 价格：
+
+<span class="key">渠道1：上海有色金属网 (smm.cn)</span>
+- 现货均价：[X元/吨]
+- 近5年均价：[X元/吨]
+
+<span class="key">渠道2：伦敦金属交易所 LME</span>
+- 3个月期货：[USD X/吨]
+- 库存：[X万吨]，趋势：[↑/↓]
+
+<span class="key">渠道3：上海期货交易所 SHFE</span>
+- 主力合约：[X元/吨]
+- 基差：[X元/吨]
+
+<span class="key">渠道4：百川盈孚/生意社</span>
+- 国内现货价
+- 进口盈亏：[±X元/吨]
+
+<span class="key">交叉验证：</span>
+四渠道价格差异：[&lt;5% / &gt;5%]
+当前价格5年分位：[X%]
+数据可信度：[高/中/低]</div>
+    </div>
+  </div>
+
+  <!-- V-C -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · V-C</div>
+        <div class="prompt-title">财务数据多源核查</div>
+        <div class="prompt-desc">CNINFO官方报告与Wind/同花顺数据交叉核实，识别异常</div>
+        <div class="badge-row">
+          <span class="badge badge-verify">财务核查</span>
+          <span class="badge badge-filter">异常识别</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 财务数据多源核查提示词</span>
+
+核查 <span class="key">[COMPANY NAME]（[CODE]）</span> 财务数据：
+
+<span class="key">数据来源对比</span>
+· 来源A：CNINFO官方年报
+· 来源B：Wind/东方财富/同花顺
+· 来源C：公司官网投资者关系
+差异 &gt; 1% → <span class="warn">[需人工核实]</span>
+
+<span class="key">财务异常信号扫描（7项）</span>
+□ 营收增速远大于现金流增速
+□ 应收增速持续高于营收增速
+□ 存货增速异常
+□ 资本开支突增但利润未同步
+□ 非标准审计意见
+□ 关联交易&gt;20%
+□ 分红率突降&gt;50%
+
+<span class="key">审计师核查</span>
+· 审计机构：[名称]
+· 是否为四大/国内头部：[是/否]
+· 审计意见：[标准/保留/否定/无法表示]
+· 近5年是否更换审计师：[是/否]
+
+<span class="key">结论：</span>
+数据一致性：[高/中/低]
+异常信号：[N个]
+建议：[可直接使用/需深度核查/排除]</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: 持仓监控 ═══════ -->
+<div id="tab-monitor" class="tab-panel">
+<div class="container">
+
+  <div class="section-label">持仓期间监控</div>
+  <div class="note-box">"95%的时间要保持耐心，一动不动。"持仓监控的目的不是找卖出理由，而是确认基本面没有发生根本性变化。</div>
+
+  <!-- M-A -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · M-A</div>
+        <div class="prompt-title">季度基本面健康检查</div>
+        <div class="prompt-desc">每季报发布后运行，确认持仓逻辑是否完好</div>
+        <div class="badge-row">
+          <span class="badge badge-analysis">季度监控</span>
+          <span class="badge badge-output">持仓决策</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 季度基本面健康检查提示词</span>
+
+请对持仓股 <span class="key">[COMPANY NAME]（[CODE]）</span> 进行季度健康检查：
+
+<span class="key">1. 核心投资逻辑完好性</span>
+   · 理由①：[___] 状态：[✓成立 / ⚠需关注 / ✗已破坏]
+   · 理由②：[___] 状态：[✓成立 / ⚠需关注 / ✗已破坏]
+   · 理由③：[___] 状态：[✓成立 / ⚠需关注 / ✗已破坏]
+
+<span class="key">2. 本季财务数据跟踪</span>
+   | 指标 | 买入时 | 上季度 | 本季度 | 变化 |
+   净利润（亿元）
+   营收（亿元）
+   毛利率（%）
+   经营现金流（亿元）
+
+<span class="key">3. 持有/卖出判断</span>
+   <span class="ok">继续持有信号：</span>
+   ✓ 核心逻辑成立，周期未到顶
+   ✓ 产品价格仍在上升通道
+   ✓ 市场尚未大规模讨论
+
+   <span class="warn">考虑卖出信号（任两条）：</span>
+   ⚠ 2/3投资理由已破坏
+   ⚠ 产品价格连3季下滑
+   ⚠ 行业大量新进入者
+   ⚠ 媒体大规模讨论
+   ⚠ PE超过45倍
+
+<span class="key">操作建议：</span>
+逻辑完好度：[X/3]
+信号：[继续持有 / 关注 / 卖出讨论]</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: 卖出决策 ═══════ -->
+<div id="tab-exit" class="tab-panel">
+<div class="container">
+
+  <div class="section-label">卖出决策系统</div>
+  <div class="note-box">"等到大家都开始讨论在这件事上赚钱时退出。"卖出比买入更难——需要克服贪婪和对最后一段利润的追逐。</div>
+
+  <!-- E-A -->
+  <div class="prompt-card">
+    <div class="prompt-header">
+      <div class="prompt-meta">
+        <div class="prompt-id">PROMPT · E-A</div>
+        <div class="prompt-title">顶部信号综合扫描</div>
+        <div class="prompt-desc">行业热度、估值、供需同时扫描顶部信号</div>
+        <div class="badge-row">
+          <span class="badge badge-filter">顶部信号</span>
+          <span class="badge badge-output">卖出决策</span>
+          <span class="badge badge-verify">多维验证</span>
+        </div>
+      </div>
+    </div>
+    <div class="prompt-body">
+      <div class="prompt-block">
+<button class="copy-btn">COPY</button><span class="comment"># 顶部信号综合扫描提示词</span>
+
+请对 <span class="key">[COMPANY / INDUSTRY]</span> 进行顶部信号扫描：
+
+<span class="key">1. 舆论热度扫描</span>
+   · 百度/微信指数热度变化
+   · 财经媒体报道数量
+   · 雪球/股吧讨论量
+   · "普通人也在讨论赚钱"现象？
+   热度：[冷清/升温/热烈/狂热]
+
+<span class="key">2. 估值顶部</span>
+   · 当前PE：[X倍]
+     <span class="ok">安全：&lt;30</span>
+     <span class="warn">警惕：30-45</span>
+     <span class="warn">危险：45-60</span>
+     <span class="warn">卖出：&gt;60</span>
+   · PB是否超历史峰值？
+   · 当前价÷买入价 = [X倍]
+
+<span class="key">3. 供需顶部信号</span>
+   · 新进入者：[N个]
+   · 资本开支同比：[+X%]
+   · 库存趋势：[累库/去库]
+   · 产能利用率：[X%]（&gt;90%预警）
+   · 价格5年分位：[X%分位]（&gt;80%预警）
+
+<span class="key">4. 产业资本动向</span>
+   · 大股东减持：[是/否]
+   · CEO/CFO离职套现：[是/否]
+   · 大型高溢价并购：[是/否]
+
+<span class="key">顶部评分（0-12分）：</span>
+舆论[0-3] 估值[0-3] 供需[0-3] 资本[0-3]
+总分：[X/12]
+→ <span class="ok">0-3：继续持有</span>
+→ <span class="warn">4-6：减仓至50%</span>
+→ <span class="warn">7-9：清仓70%</span>
+→ <span class="warn">10+：全部清仓</span></div>
+      <div class="note-box">💡 卖出纪律：不要试图卖在最高点。宁可少赚最后20%，也要避免顶部套牢。"等到大家都开始讨论在这件事上赚钱时退出"——执行时不要犹豫。</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ TAB: 自动筛选 ═══════ -->
+<div id="tab-screener" class="tab-panel">
+<div class="container">
+
+  <div class="section-label">自动选股筛选器</div>
+  <div class="note-box">
+    基于寒武纪方法论五级漏斗逻辑，对A股资源/商品类国企自动筛选，按相关度排序输出前50只，并给出投资建议。
+    当前为 <strong>模拟演示模式</strong>，内置约50只参考股票的基础数据。
+  </div>
+
+  <div class="screener-section"><!-- Populated by JS --></div>
+
+</div>
+</div>
+
+<!-- ═══════ FOOTER ═══════ -->
+<footer class="site-footer">
+  <div class="container">
+    <p>寒武纪方法论 · AI选股提示词系统 · 仅供研究参考，不构成投资建议</p>
+    <p style="margin-top:0.3rem">基于寒武纪的鳄鱼价值投资体系 · 五级漏斗筛选 · 周期判断 · 自动排序</p>
+  </div>
+</footer>
+
+<!-- ═══════ SCRIPTS ═══════ -->
+<script src="js/utils.js"></script>
+<script src="js/methodology.js"></script>
+<script src="js/data-layer.js"></script>
+<script src="js/screener.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

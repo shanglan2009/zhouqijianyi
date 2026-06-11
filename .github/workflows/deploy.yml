@@ -1,0 +1,57 @@
+# 部署到腾讯云 EdgeOne
+#
+# 前提条件：
+#   1. 在腾讯云 EdgeOne 控制台创建站点并绑定域名
+#   2. 配置好边缘函数（Edge Functions）
+#   3. 在 GitHub Secrets 中配置以下变量：
+#      - TENCENT_SECRET_ID
+#      - TENCENT_SECRET_KEY
+#      - EDGEONE_ZONE_ID
+#
+# 部署流程：
+#   git push 到 main 分支后自动触发
+#   将静态文件部署到 EdgeOne 静态站点
+#   将 Edge Function 部署到关联路由
+
+name: 部署到 EdgeOne
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 上传静态文件到 COS (腾讯云对象存储)
+        uses: tencentcloud/cos-action@v1
+        with:
+          secret_id: ${{ secrets.TENCENT_SECRET_ID }}
+          secret_key: ${{ secrets.TENCENT_SECRET_KEY }}
+          bucket: ${{ secrets.COS_BUCKET }}
+          region: ${{ secrets.COS_REGION || 'ap-guangzhou' }}
+          source_folder: './'
+          target_folder: '/'
+          # 排除不需要上传的文件
+          exclude: |
+            .git/**
+            .github/**
+            edgeone/**
+            README.md
+            .gitignore
+
+      - name: 刷新 EdgeOne CDN 缓存
+        uses: tencentcloud/cdn-purge-action@v1
+        with:
+          secret_id: ${{ secrets.TENCENT_SECRET_ID }}
+          secret_key: ${{ secrets.TENCENT_SECRET_KEY }}
+          service: 'edgeone'
+          zone_id: ${{ secrets.EDGEONE_ZONE_ID }}
+          urls: |
+            https://${{ secrets.EDGEONE_DOMAIN }}/
+            https://${{ secrets.EDGEONE_DOMAIN }}/index.html
+            https://${{ secrets.EDGEONE_DOMAIN }}/css/style.css
+            https://${{ secrets.EDGEONE_DOMAIN }}/js/app.js
