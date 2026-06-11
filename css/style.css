@@ -803,6 +803,75 @@ body {
 }
 .user-stock-remove:hover { opacity: 1; }
 
+/* ── Stock Confirmation Form ── */
+.stock-confirm-form {
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  margin-top: 0.75rem;
+  overflow: hidden;
+  background: var(--gold-pale);
+}
+.stock-confirm-form .confirm-header {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0.5rem 0.75rem;
+  background: var(--gold-light);
+  color: #6a4c00;
+  border-bottom: 1px solid var(--gold);
+}
+.stock-confirm-form .confirm-body {
+  padding: 0.5rem 0.75rem 0.75rem;
+}
+.stock-confirm-form .confirm-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.35rem 0;
+  font-family: var(--sans);
+  font-size: 12px;
+}
+.stock-confirm-form .confirm-label {
+  flex: 0 0 70px;
+  font-weight: 600;
+  color: var(--ink2);
+}
+.stock-confirm-form .confirm-value {
+  color: var(--ink);
+  font-weight: 600;
+}
+.stock-confirm-form .confirm-value.mono {
+  font-family: var(--mono);
+}
+.stock-confirm-form .required {
+  color: var(--red);
+}
+.stock-confirm-form .confirm-select {
+  flex: 1;
+  min-width: 180px;
+  font-family: var(--sans);
+  font-size: 12px;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+}
+.stock-confirm-form .confirm-hint {
+  width: 100%;
+  font-size: 10px;
+  color: var(--ink3);
+  padding-left: 74px;
+  margin-top: -0.1rem;
+}
+.stock-confirm-form .confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding-top: 0.25rem;
+}
+
 /* ── Sort controls ── */
 .results-table th.sortable {
   cursor: pointer;

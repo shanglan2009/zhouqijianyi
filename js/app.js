@@ -302,98 +302,138 @@ const App = (() => {
   function addUserStockFromInput() {
     try {
       const input = $('#stock-search-input');
-      if (!input) {
-        showToast('输入框未找到', 'error');
-        return;
-      }
+      if (!input) { showToast('输入框未找到', 'error'); return; }
 
-      // 1) Use selectedCode if set (from dropdown click)
       let code = input.dataset.selectedCode;
       const rawValue = input.value.trim();
       let name = input.dataset.selectedName || rawValue.replace(/\s*\(.*?\)\s*/g, '').trim();
 
-      // 2) If no code from dropdown, try to extract from input
       if (!code) {
-        // Try 6-digit code match
         const match6 = rawValue.match(/(\d{6})/);
         if (match6) {
           code = match6[1];
           if (!name || name === code) name = rawValue;
         } else {
-          // Try to find by name in the universe
-          const all = getAllStocksMerged();
-          const found = all.find(s => s.name === rawValue || s.code === rawValue);
-          if (found) {
-            showToast('"' + found.name + '" 已在候选池中', 'info');
-            input.value = '';
-            delete input.dataset.selectedCode;
-            delete input.dataset.selectedName;
-            return;
-          }
-          code = rawValue;
-          name = rawValue;
+          const found = getAllStocksMerged().find(s => s.name === rawValue || s.code === rawValue);
+          if (found) { showToast('"' + found.name + '" 已在候选池中', 'info'); input.value = ''; return; }
+          code = rawValue; name = rawValue;
         }
       }
 
-      if (!code) {
-        showToast('请输入股票代码或名称', 'info');
-        return;
-      }
+      if (!code) { showToast('请输入股票代码或名称', 'info'); return; }
+      if (findStock(code)) { showToast('该股票已在候选池中', 'info'); input.value = ''; return; }
 
-      // 3) Check duplicates in built-in universe
-      const existing = findStock(code);
-      if (existing) {
-        showToast('"' + existing.name + '" 已在候选池中', 'info');
-        input.value = '';
-        delete input.dataset.selectedCode;
-        delete input.dataset.selectedName;
-        return;
-      }
-
-      // 4) Check duplicates in user-added list
-      if (state.userStocks.some(s => s.code === code)) {
-        showToast('"' + name + '" 已添加过', 'info');
-        input.value = '';
-        delete input.dataset.selectedCode;
-        delete input.dataset.selectedName;
-        return;
-      }
-
-      // 5) Create stock with random demo data
-      const newStock = {
-        code: code,
-        name: name || code,
-        sector: '自定义',
-        mktCap: 50 + Math.random() * 200,
-        peTTM: 10 + Math.random() * 20,
-        pb: 1 + Math.random() * 3,
-        roe: 5 + Math.random() * 15,
-        holder: '待确认',
-        holderType: '其他',
-        natlStrategic: false,
-        grossMargin: 15 + Math.random() * 25,
-        netProfit3y: 1 + Math.random() * 4,
-        debtRatio: 35 + Math.random() * 25,
-        cashFlowRatio: 0.5 + Math.random() * 0.5,
-        prodPrice5yPct: 30 + Math.random() * 40,
-        isUserAdded: true,
-      };
-
-      state.userStocks.push(newStock);
-      saveUserStocks();
-
-      input.value = '';
-      delete input.dataset.selectedCode;
-      delete input.dataset.selectedName;
-      showToast('✅ 已添加 "' + (name || code) + '"', 'success');
-
-      renderUserStockList();
-      updateStockCount();
-      runScreener();
+      // Show confirmation form for user to pick holder type & sector
+      showStockConfirmForm(code, name);
     } catch (e) {
       console.error('addUserStockFromInput error:', e);
       showToast('添加失败: ' + e.message, 'error');
     }
+  }
+
+  // ─── Stock Confirmation Form ───
+  function showStockConfirmForm(code, name) {
+    document.getElementById('stock-confirm-form')?.remove();
+    const form = document.createElement('div');
+    form.id = 'stock-confirm-form';
+    form.className = 'stock-confirm-form';
+    form.innerHTML =
+      '<div class="confirm-header">确认股票信息</div>' +
+      '<div class="confirm-body">' +
+        '<div class="confirm-row"><span class="confirm-label">代码</span><span class="confirm-value mono">' + code + '</span></div>' +
+        '<div class="confirm-row"><span class="confirm-label">名称</span><span class="confirm-value">' + name + '</span></div>' +
+        '<div class="confirm-row">' +
+          '<span class="confirm-label">企业性质 <span class="required">*</span></span>' +
+          '<select id="cf-holder-type" class="confirm-select">' +
+            '<option value="">— 请选择 —</option>' +
+            '<option value="央企">央企（国务院国资委）</option>' +
+            '<option value="省国资委">省国资委控股</option>' +
+            '<option value="地市国资委">地市级国资委</option>' +
+            '<option value="民营">民营</option>' +
+            '<option value="外资">外资</option>' +
+            '<option value="其他">其他</option>' +
+          '</select>' +
+          '<div class="confirm-hint">Gate 1：央企/省国资委/地市国资委 → 通过 ✓</div>' +
+        '</div>' +
+        '<div class="confirm-row">' +
+          '<span class="confirm-label">行业 <span class="required">*</span></span>' +
+          '<select id="cf-sector" class="confirm-select">' +
+            '<option value="">— 请选择 —</option>' +
+            '<optgroup label="★ 战略商品（Gate 2 通过 + 高分）">' +
+              '<option value="稀土">稀土</option><option value="钨">钨</option><option value="锑">锑</option>' +
+              '<option value="钼">钼</option><option value="钴">钴</option><option value="锂">锂</option>' +
+              '<option value="钛">钛</option><option value="黄金">黄金</option><option value="石油天然气">石油天然气</option>' +
+              '<option value="煤炭">煤炭</option><option value="钾肥">钾肥</option><option value="磷化工">磷化工</option>' +
+            '</optgroup>' +
+            '<optgroup label="商品类（Gate 2 通过）">' +
+              '<option value="铜">铜</option><option value="铝">铝</option><option value="铅锌">铅锌</option>' +
+              '<option value="锡">锡</option><option value="镍">镍</option><option value="钢铁">钢铁</option>' +
+              '<option value="水泥">水泥</option><option value="电力">电力</option><option value="化工">化工</option>' +
+              '<option value="农业">农业</option>' +
+            '</optgroup>' +
+            '<optgroup label="非商品类（Gate 2 不通过）">' +
+              '<option value="金融">金融</option><option value="科技">科技/AI/芯片</option>' +
+              '<option value="消费">消费品</option><option value="医药">医药</option>' +
+              '<option value="房地产">房地产</option><option value="其他">其他行业</option>' +
+            '</optgroup>' +
+          '</select>' +
+          '<div class="confirm-hint">Gate 2：战略商品 / 商品类行业 → 通过 ✓</div>' +
+        '</div>' +
+        '<div class="confirm-row">' +
+          '<div class="confirm-actions">' +
+            '<button class="btn" id="cf-confirm-btn">确认添加</button> ' +
+            '<button class="btn btn-outline btn-sm" id="cf-cancel-btn">取消</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.querySelector('.add-stock-body')?.appendChild(form);
+    document.getElementById('cf-confirm-btn').onclick = function() { confirmAddStock(code, name); };
+    document.getElementById('cf-cancel-btn').onclick = function() {
+      document.getElementById('stock-confirm-form')?.remove();
+      const inp = $('#stock-search-input');
+      if (inp) { inp.value = ''; delete inp.dataset.selectedCode; }
+    };
+  }
+
+  function confirmAddStock(code, name) {
+    const holderType = document.getElementById('cf-holder-type').value;
+    const sector = document.getElementById('cf-sector').value;
+    if (!holderType) { showToast('请选择企业性质', 'info'); return; }
+    if (!sector) { showToast('请选择行业分类', 'info'); return; }
+
+    const holderMap = { '央企':'国务院国资委','省国资委':holderType + '控股','地市国资委':holderType + '控股','民营':'民营股东','外资':'外资股东','其他':'待确认' };
+    const strategicSectors = ['稀土','钨','锑','钼','钴','锂','钛','黄金','石油天然气','煤炭','钾肥','磷化工'];
+
+    const newStock = {
+      code: code,
+      name: name || code,
+      sector: sector,
+      mktCap: 50 + Math.random() * 200,
+      peTTM: 10 + Math.random() * 20,
+      pb: 1 + Math.random() * 3,
+      roe: 5 + Math.random() * 15,
+      holder: holderMap[holderType] || holderType,
+      holderType: holderType,
+      natlStrategic: strategicSectors.indexOf(sector) >= 0,
+      grossMargin: 15 + Math.random() * 25,
+      netProfit3y: 1 + Math.random() * 4,
+      debtRatio: 35 + Math.random() * 25,
+      cashFlowRatio: 0.5 + Math.random() * 0.5,
+      prodPrice5yPct: 30 + Math.random() * 40,
+      isUserAdded: true,
+    };
+
+    state.userStocks.push(newStock);
+    saveUserStocks();
+
+    document.getElementById('stock-confirm-form')?.remove();
+    const input = $('#stock-search-input');
+    if (input) { input.value = ''; delete input.dataset.selectedCode; }
+
+    showToast('✅ 已添加 "' + (name || code) + '"', 'success');
+    renderUserStockList();
+    updateStockCount();
+    runScreener();
   }
 
   function renderUserStockList() {
