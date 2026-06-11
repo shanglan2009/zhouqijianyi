@@ -44,6 +44,8 @@ const App = (() => {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           state.userStocks = parsed;
+          // Schedule a check for stocks with incomplete data (sector='自定义' or holderType='其他')
+          setTimeout(checkStaleUserStocks, 500);
         }
       }
     } catch (e) { /* ignore */ }
@@ -53,6 +55,15 @@ const App = (() => {
     try {
       localStorage.setItem('zhouqijianyi_user_stocks', JSON.stringify(state.userStocks));
     } catch (e) { /* ignore */ }
+  }
+
+  /** Detect stale user stocks (saved before the confirmation-form fix) and prompt edit */
+  function checkStaleUserStocks() {
+    const stale = state.userStocks.filter(s => s.sector === '自定义' || s.holderType === '其他');
+    if (stale.length === 0) return;
+    // Show editable tags with warning for each stale stock
+    renderUserStockList();
+    showToast('有 ' + stale.length + ' 只自选股信息不完整，请点击 ✏️ 编辑完善', 'info');
   }
 
   /** Helper: get all stocks (built-in + user-added) */
@@ -321,9 +332,19 @@ const App = (() => {
       }
 
       if (!code) { showToast('请输入股票代码或名称', 'info'); return; }
-      if (findStock(code)) { showToast('该股票已在候选池中', 'info'); input.value = ''; return; }
 
-      // Show confirmation form for user to pick holder type & sector
+      // If stock exists in built-in universe, can't add
+      if (DataLayer.getStock(code)) { showToast('该股票已在候选池中', 'info'); input.value = ''; return; }
+
+      // If stock already in user stocks with stale data, open edit form
+      const existingUserStock = state.userStocks.find(s => s.code === code);
+      if (existingUserStock) {
+        showStockConfirmForm(code, existingUserStock.name, existingUserStock);
+        input.value = '';
+        return;
+      }
+
+      // Show confirmation form for new stock
       showStockConfirmForm(code, name);
     } catch (e) {
       console.error('addUserStockFromInput error:', e);
@@ -332,13 +353,19 @@ const App = (() => {
   }
 
   // ─── Stock Confirmation Form ───
-  function showStockConfirmForm(code, name) {
+  function showStockConfirmForm(code, name, existingStock) {
     document.getElementById('stock-confirm-form')?.remove();
+    const isEdit = !!existingStock;
+    const defaultHolder = existingStock ? existingStock.holderType : '';
+    const defaultSector = existingStock ? existingStock.sector : '';
+    const titleText = isEdit ? '编辑股票信息' : '确认股票信息';
+    const btnText = isEdit ? '保存修改' : '确认添加';
+
     const form = document.createElement('div');
     form.id = 'stock-confirm-form';
     form.className = 'stock-confirm-form';
     form.innerHTML =
-      '<div class="confirm-header">确认股票信息</div>' +
+      '<div class="confirm-header">' + titleText + '</div>' +
       '<div class="confirm-body">' +
         '<div class="confirm-row"><span class="confirm-label">代码</span><span class="confirm-value mono">' + code + '</span></div>' +
         '<div class="confirm-row"><span class="confirm-label">名称</span><span class="confirm-value">' + name + '</span></div>' +
@@ -346,12 +373,12 @@ const App = (() => {
           '<span class="confirm-label">企业性质 <span class="required">*</span></span>' +
           '<select id="cf-holder-type" class="confirm-select">' +
             '<option value="">— 请选择 —</option>' +
-            '<option value="央企">央企（国务院国资委）</option>' +
-            '<option value="省国资委">省国资委控股</option>' +
-            '<option value="地市国资委">地市级国资委</option>' +
-            '<option value="民营">民营</option>' +
-            '<option value="外资">外资</option>' +
-            '<option value="其他">其他</option>' +
+            '<option value="央企"' + (defaultHolder === '央企' ? ' selected' : '') + '>央企（国务院国资委）</option>' +
+            '<option value="省国资委"' + (defaultHolder === '省国资委' ? ' selected' : '') + '>省国资委控股</option>' +
+            '<option value="地市国资委"' + (defaultHolder === '地市国资委' ? ' selected' : '') + '>地市级国资委</option>' +
+            '<option value="民营"' + (defaultHolder === '民营' ? ' selected' : '') + '>民营</option>' +
+            '<option value="外资"' + (defaultHolder === '外资' ? ' selected' : '') + '>外资</option>' +
+            '<option value="其他"' + (defaultHolder === '其他' ? ' selected' : '') + '>其他</option>' +
           '</select>' +
           '<div class="confirm-hint">Gate 1：央企/省国资委/地市国资委 → 通过 ✓</div>' +
         '</div>' +
@@ -360,34 +387,63 @@ const App = (() => {
           '<select id="cf-sector" class="confirm-select">' +
             '<option value="">— 请选择 —</option>' +
             '<optgroup label="★ 战略商品（Gate 2 通过 + 高分）">' +
-              '<option value="稀土">稀土</option><option value="钨">钨</option><option value="锑">锑</option>' +
-              '<option value="钼">钼</option><option value="钴">钴</option><option value="锂">锂</option>' +
-              '<option value="钛">钛</option><option value="黄金">黄金</option><option value="石油天然气">石油天然气</option>' +
-              '<option value="煤炭">煤炭</option><option value="钾肥">钾肥</option><option value="磷化工">磷化工</option>' +
+              '<option value="稀土"' + (defaultSector === '稀土' ? ' selected' : '') + '>稀土</option>' +
+              '<option value="钨"' + (defaultSector === '钨' ? ' selected' : '') + '>钨</option>' +
+              '<option value="锑"' + (defaultSector === '锑' ? ' selected' : '') + '>锑</option>' +
+              '<option value="钼"' + (defaultSector === '钼' ? ' selected' : '') + '>钼</option>' +
+              '<option value="钴"' + (defaultSector === '钴' ? ' selected' : '') + '>钴</option>' +
+              '<option value="锂"' + (defaultSector === '锂' ? ' selected' : '') + '>锂</option>' +
+              '<option value="钛"' + (defaultSector === '钛' ? ' selected' : '') + '>钛</option>' +
+              '<option value="铀"' + (defaultSector === '铀' ? ' selected' : '') + '>铀</option>' +
+              '<option value="黄金"' + (defaultSector === '黄金' ? ' selected' : '') + '>黄金</option>' +
+              '<option value="石油天然气"' + (defaultSector === '石油天然气' ? ' selected' : '') + '>石油天然气</option>' +
+              '<option value="煤炭"' + (defaultSector === '煤炭' ? ' selected' : '') + '>煤炭</option>' +
+              '<option value="钾肥"' + (defaultSector === '钾肥' ? ' selected' : '') + '>钾肥</option>' +
+              '<option value="磷化工"' + (defaultSector === '磷化工' ? ' selected' : '') + '>磷化工</option>' +
             '</optgroup>' +
             '<optgroup label="商品类（Gate 2 通过）">' +
-              '<option value="铜">铜</option><option value="铝">铝</option><option value="铅锌">铅锌</option>' +
-              '<option value="锡">锡</option><option value="镍">镍</option><option value="钢铁">钢铁</option>' +
-              '<option value="水泥">水泥</option><option value="电力">电力</option><option value="化工">化工</option>' +
-              '<option value="农业">农业</option>' +
+              '<option value="铜"' + (defaultSector === '铜' ? ' selected' : '') + '>铜</option>' +
+              '<option value="铝"' + (defaultSector === '铝' ? ' selected' : '') + '>铝</option>' +
+              '<option value="铅锌"' + (defaultSector === '铅锌' ? ' selected' : '') + '>铅锌</option>' +
+              '<option value="锡"' + (defaultSector === '锡' ? ' selected' : '') + '>锡</option>' +
+              '<option value="镍"' + (defaultSector === '镍' ? ' selected' : '') + '>镍</option>' +
+              '<option value="钢铁"' + (defaultSector === '钢铁' ? ' selected' : '') + '>钢铁</option>' +
+              '<option value="水泥"' + (defaultSector === '水泥' ? ' selected' : '') + '>水泥</option>' +
+              '<option value="电力"' + (defaultSector === '电力' ? ' selected' : '') + '>电力</option>' +
+              '<option value="化工"' + (defaultSector === '化工' ? ' selected' : '') + '>化工</option>' +
+              '<option value="农业"' + (defaultSector === '农业' ? ' selected' : '') + '>农业</option>' +
             '</optgroup>' +
             '<optgroup label="非商品类（Gate 2 不通过）">' +
-              '<option value="金融">金融</option><option value="科技">科技/AI/芯片</option>' +
-              '<option value="消费">消费品</option><option value="医药">医药</option>' +
-              '<option value="房地产">房地产</option><option value="其他">其他行业</option>' +
+              '<option value="金融"' + (defaultSector === '金融' ? ' selected' : '') + '>金融</option>' +
+              '<option value="科技"' + (defaultSector === '科技' ? ' selected' : '') + '>科技/AI/芯片</option>' +
+              '<option value="消费"' + (defaultSector === '消费' ? ' selected' : '') + '>消费品</option>' +
+              '<option value="医药"' + (defaultSector === '医药' ? ' selected' : '') + '>医药</option>' +
+              '<option value="房地产"' + (defaultSector === '房地产' ? ' selected' : '') + '>房地产</option>' +
+              '<option value="军工"' + (defaultSector === '军工' ? ' selected' : '') + '>军工/船舶/航空航天</option>' +
+              '<option value="其他"' + (defaultSector === '其他' ? ' selected' : '') + '>其他行业</option>' +
             '</optgroup>' +
           '</select>' +
           '<div class="confirm-hint">Gate 2：战略商品 / 商品类行业 → 通过 ✓</div>' +
         '</div>' +
         '<div class="confirm-row">' +
           '<div class="confirm-actions">' +
-            '<button class="btn" id="cf-confirm-btn">确认添加</button> ' +
+            '<button class="btn" id="cf-confirm-btn">' + btnText + '</button> ' +
             '<button class="btn btn-outline btn-sm" id="cf-cancel-btn">取消</button>' +
           '</div>' +
         '</div>' +
       '</div>';
     document.querySelector('.add-stock-body')?.appendChild(form);
-    document.getElementById('cf-confirm-btn').onclick = function() { confirmAddStock(code, name); };
+
+    // Scroll form into view
+    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    document.getElementById('cf-confirm-btn').onclick = function() {
+      if (isEdit) {
+        confirmEditStock(code, name, existingStock);
+      } else {
+        confirmAddStock(code, name);
+      }
+    };
     document.getElementById('cf-cancel-btn').onclick = function() {
       document.getElementById('stock-confirm-form')?.remove();
       const inp = $('#stock-search-input');
@@ -436,6 +492,31 @@ const App = (() => {
     runScreener();
   }
 
+  /** Edit an existing user-added stock (fix stale data) */
+  function confirmEditStock(code, name, existingStock) {
+    const holderType = document.getElementById('cf-holder-type').value;
+    const sector = document.getElementById('cf-sector').value;
+    if (!holderType) { showToast('请选择企业性质', 'info'); return; }
+    if (!sector) { showToast('请选择行业分类', 'info'); return; }
+
+    const holderMap = { '央企':'国务院国资委','省国资委':holderType + '控股','地市国资委':holderType + '控股','民营':'民营股东','外资':'外资股东','其他':'待确认' };
+    const strategicSectors = ['稀土','钨','锑','钼','钴','锂','钛','黄金','石油天然气','煤炭','钾肥','磷化工'];
+
+    const idx = state.userStocks.indexOf(existingStock);
+    if (idx === -1) { showToast('未找到该股票', 'error'); return; }
+
+    state.userStocks[idx].sector = sector;
+    state.userStocks[idx].holder = holderMap[holderType] || holderType;
+    state.userStocks[idx].holderType = holderType;
+    state.userStocks[idx].natlStrategic = strategicSectors.indexOf(sector) >= 0;
+    saveUserStocks();
+
+    document.getElementById('stock-confirm-form')?.remove();
+    showToast('✅ 已更新 "' + (name || code) + '" 信息', 'success');
+    renderUserStockList();
+    runScreener();
+  }
+
   function renderUserStockList() {
     const container = $('#user-stock-list');
     if (!container) return;
@@ -448,12 +529,14 @@ const App = (() => {
     container.innerHTML = `
       <div class="user-stock-label">已添加的自选股 (${state.userStocks.length})：</div>
       <div class="user-stock-tags">
-        ${state.userStocks.map(s => `
-          <span class="user-stock-tag" title="${s.code} · ${s.sector}">
-            ${s.name}
+        ${state.userStocks.map(s => {
+          const isStale = s.sector === '自定义' || s.holderType === '其他';
+          return `<span class="user-stock-tag ${isStale ? 'stale' : ''}" title="${s.code} · ${s.sector}">
+            ${isStale ? '⚠️ ' : ''}${s.name}
+            <button class="user-stock-edit" data-code="${s.code}">✏️</button>
             <button class="user-stock-remove" data-code="${s.code}">&times;</button>
-          </span>
-        `).join('')}
+          </span>`;
+        }).join('')}
       </div>
     `;
 
@@ -462,11 +545,21 @@ const App = (() => {
       btn.addEventListener('click', () => {
         const code = btn.dataset.code;
         state.userStocks = state.userStocks.filter(s => s.code !== code);
-        // user-stock tag remove — already filtered from state.userStocks in click handler
         saveUserStocks();
         renderUserStockList();
         updateStockCount();
-        showToast(`已移除 "${code}"`, 'info');
+        showToast('已移除 "' + code + '"', 'info');
+      });
+    });
+
+    // Bind edit buttons
+    container.querySelectorAll('.user-stock-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.dataset.code;
+        const stock = state.userStocks.find(s => s.code === code);
+        if (stock) {
+          showStockConfirmForm(stock.code, stock.name, stock);
+        }
       });
     });
   }

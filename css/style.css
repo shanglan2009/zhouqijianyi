@@ -791,17 +791,22 @@ body {
   border-radius: 20px;
   font-weight: 600;
 }
-.user-stock-remove {
+.user-stock-tag.stale {
+  background: var(--red-light);
+  color: var(--red);
+  border: 1px dashed var(--red);
+}
+.user-stock-edit, .user-stock-remove {
   background: none;
   border: none;
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
-  color: var(--blue);
+  color: inherit;
   line-height: 1;
-  padding: 0;
+  padding: 0 0.1rem;
   opacity: 0.6;
 }
-.user-stock-remove:hover { opacity: 1; }
+.user-stock-edit:hover, .user-stock-remove:hover { opacity: 1; }
 
 /* ── Stock Confirmation Form ── */
 .stock-confirm-form {
