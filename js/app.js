@@ -36,15 +36,14 @@ const App = (() => {
     bindGlobalEvents();
   }
 
-  // ─── User stock persistence ───
+  // ─── User stock persistence (app.js owns this fully) ───
   function loadUserStocks() {
     try {
       const saved = localStorage.getItem('zhouqijianyi_user_stocks');
       if (saved) {
-        const stocks = JSON.parse(saved);
-        if (Array.isArray(stocks)) {
-          state.userStocks = stocks;
-          stocks.forEach(s => DataLayer.addUserStock(s));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          state.userStocks = parsed;
         }
       }
     } catch (e) { /* ignore */ }
@@ -54,6 +53,27 @@ const App = (() => {
     try {
       localStorage.setItem('zhouqijianyi_user_stocks', JSON.stringify(state.userStocks));
     } catch (e) { /* ignore */ }
+  }
+
+  /** Helper: get all stocks (built-in + user-added) */
+  function getAllStocksMerged() {
+    return DataLayer.getAllStocks().concat(state.userStocks);
+  }
+
+  /** Helper: find stock in merged pool */
+  function findStock(code) {
+    return DataLayer.getStock(code) || state.userStocks.find(s => s.code === code) || null;
+  }
+
+  /** Helper: fuzzy search across merged pool */
+  function searchMerged(q) {
+    const query = q.toLowerCase().trim();
+    if (!query) return [];
+    return getAllStocksMerged().filter(s =>
+      s.code.includes(query) ||
+      s.name.toLowerCase().includes(query) ||
+      (s.sector && s.sector.toLowerCase().includes(query))
+    );
   }
 
   // ─── Tab Navigation ───
@@ -125,7 +145,7 @@ const App = (() => {
     const panel = $('#tab-screener .screener-section');
     if (!panel) return;
 
-    const stocks = DataLayer.getAllStocks();
+    const stocks = getAllStocksMerged();
     const ds = state.dataSource;
 
     panel.innerHTML = `
@@ -221,7 +241,7 @@ const App = (() => {
         return;
       }
       searchTimer = setTimeout(() => {
-        const results = DataLayer.searchStocks(q);
+        const results = searchMerged(q);
         if (results.length === 0) {
           // Allow adding arbitrary stock by code/name
           dropdown.innerHTML = `<div class="search-item search-new" data-code="${q}" data-name="${q}">➕ 添加: "${q}"</div>`;
@@ -301,7 +321,7 @@ const App = (() => {
           if (!name || name === code) name = rawValue;
         } else {
           // Try to find by name in the universe
-          const all = DataLayer.getAllStocks();
+          const all = getAllStocksMerged();
           const found = all.find(s => s.name === rawValue || s.code === rawValue);
           if (found) {
             showToast('"' + found.name + '" 已在候选池中', 'info');
@@ -321,7 +341,7 @@ const App = (() => {
       }
 
       // 3) Check duplicates in built-in universe
-      const existing = DataLayer.getStock(code);
+      const existing = findStock(code);
       if (existing) {
         showToast('"' + existing.name + '" 已在候选池中', 'info');
         input.value = '';
@@ -359,7 +379,6 @@ const App = (() => {
         isUserAdded: true,
       };
 
-      DataLayer.addUserStock(newStock);
       state.userStocks.push(newStock);
       saveUserStocks();
 
@@ -403,7 +422,7 @@ const App = (() => {
       btn.addEventListener('click', () => {
         const code = btn.dataset.code;
         state.userStocks = state.userStocks.filter(s => s.code !== code);
-        DataLayer.removeUserStock(code);
+        // user-stock tag remove — already filtered from state.userStocks in click handler
         saveUserStocks();
         renderUserStockList();
         updateStockCount();
@@ -414,7 +433,7 @@ const App = (() => {
 
   function updateStockCount() {
     const el = $('.stat-item:first-child .stat-num');
-    if (el) el.textContent = DataLayer.getAllStocks().length;
+    if (el) el.textContent = getAllStocksMerged().length;
   }
 
   async function runScreener() {
@@ -429,7 +448,7 @@ const App = (() => {
     // Simulate async processing
     await new Promise(r => setTimeout(r, 600));
 
-    const stocks = DataLayer.getAllStocks();
+    const stocks = getAllStocksMerged();
     const count = parseInt($('#result-count-select')?.value || '50');
     const topN = Screener.getTopN(stocks, count);
 
