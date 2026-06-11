@@ -171,9 +171,7 @@ const App = (() => {
         <label>
           显示
           <select id="result-count-select">
-            <option value="20">前20名</option>
-            <option value="50" selected>前50名</option>
-            <option value="100">全部</option>
+            <option value="100" selected>全部 (最多100只)</option>
           </select>
         </label>
         <button class="btn" id="run-screener-btn">
@@ -319,6 +317,8 @@ const App = (() => {
 
     renderUserStockList();
     updateStockCount();
+    // Auto-run screener to immediately show the new stock in results
+    runScreener();
   }
 
   function renderUserStockList() {
